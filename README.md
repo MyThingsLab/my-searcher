@@ -4,7 +4,7 @@
 
 Indexes a repo's files and ranks the ones most relevant to a given issue — a
 reusable "which files matter here" step, designed for reuse by later
-[MyThingsLab](../mythings-core) tools (MyGroomer, MyCoder) that need
+[MyThingsLab](../my-things-core) tools (MyGroomer, MyCoder) that need
 relevant-file context before acting.
 
 ## How it works
@@ -45,14 +45,14 @@ mysearcher rank --issue 12 --engine claude-cli           # real Engine reorder
 
 Standalone today (no other tool calls it yet) — a building block designed
 ahead of MyGroomer/MyCoder per the
-[design doc](../mythings-core/docs/tools/my-searcher.md). See the
+[design doc](../my-things-core/docs/tools/my-searcher.md). See the
 [org README](../README.md) for how the shipped tools chain together.
 
 ## Install (development)
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ../mythings-core -e ".[dev]"
+pip install -e ../my-things-core -e ".[dev]"
 pytest
 ```
 
