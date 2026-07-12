@@ -7,7 +7,7 @@ from mythings.engine import EngineRequest, EngineResult, NoopEngine
 from mythings.ledger import Ledger
 from mythings.policy import Action, Decision, PolicyResult
 
-from conftest import FakeRunner, make_repo
+from conftest import fake_gh, make_repo
 from mysearcher.searcher import Issue, Searcher
 
 
@@ -80,7 +80,7 @@ def test_engine_reply_that_is_not_json_falls_back(tmp_path: Path) -> None:
 def test_comment_posts_ranked_list_when_requested(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     ledger = Ledger(tmp_path / "ledger.jsonl")
-    fake = FakeRunner()
+    fake = fake_gh()
     searcher = Searcher(
         repo_path=repo, ledger=ledger, repo="owner/name", runner=fake, engine=NoopEngine()
     )
@@ -100,7 +100,7 @@ def test_comment_skipped_without_repo(tmp_path: Path) -> None:
 def test_comment_denied_by_policy_is_not_posted(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     ledger = Ledger(tmp_path / "ledger.jsonl")
-    fake = FakeRunner()
+    fake = fake_gh()
     searcher = Searcher(
         repo_path=repo,
         ledger=ledger,
