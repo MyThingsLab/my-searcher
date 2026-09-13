@@ -90,8 +90,45 @@ def shortlist(repo: Path, issue_title: str, issue_body: str, *, top: int = 20) -
     index = build_index(repo)
     issue_tokens = tokenize(issue_title) | tokenize(issue_body)
     scored = score_files(index, issue_tokens)
-    if issue_tokens and any(score > 0 for _, score in scored):
-        ranked = sorted(scored, key=lambda item: item[1], reverse=True)
+    scores: dict[str, float] = {path: float(score) for path, score in scored}
+
+    # Augment relevance with deterministic graph traversal (my-searcher#9)
+    try:
+        from mythings.graph import CodebaseGraph, MarkdownExtractor, PythonAstExtractor
+
+        cached_db = repo / ".mythings" / "graph.sqlite"
+        if cached_db.exists():
+            graph = CodebaseGraph(cached_db)
+        else:
+            graph = CodebaseGraph.in_memory()
+            PythonAstExtractor(repo_root=repo).index_repo(graph)
+            MarkdownExtractor(repo_root=repo).index_docs(graph)
+
+        seed_nodes = []
+        for token in issue_tokens:
+            if len(token) >= 3:
+                for s in graph.find_symbols(token):
+                    seed_nodes.append(s)
+
+        seed_ids = [s.id for s in seed_nodes]
+        if seed_ids:
+            # 1-hop neighbors get +3.0 boost (callers, callees, types, governing docs)
+            hop1_nodes, _ = graph.k_hop_subgraph(seed_ids, k=1)
+            for n in hop1_nodes:
+                if n.path:
+                    scores[n.path] = scores.get(n.path, 0.0) + 3.0
+
+            # 2-hop neighbors get +1.0 boost
+            hop2_nodes, _ = graph.k_hop_subgraph(seed_ids, k=2)
+            hop1_paths = {h.path for h in hop1_nodes}
+            for n in hop2_nodes:
+                if n.path and n.path not in hop1_paths:
+                    scores[n.path] = scores.get(n.path, 0.0) + 1.0
+    except Exception:
+        pass
+
+    if issue_tokens and any(score > 0 for score in scores.values()):
+        ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         return [path for path, _ in ranked[:top]]
     # Nothing scored above zero (or the issue carried no usable tokens): fall
     # back to most-recently-modified files rather than an empty shortlist --
