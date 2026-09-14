@@ -4,19 +4,13 @@ import argparse
 import json
 from pathlib import Path
 
-from mythings.engine import ClaudeCLIEngine, Engine, NoopEngine
+from mythings.engine import build_engine_from_args
 from mythings.github import Runner
 from mythings.ledger import Ledger
 
 from mysearcher.searcher import Issue, Searcher
 
 _ENGINE_NAMES = ("noop", "claude-cli")
-
-
-def build_engine(name: str, *, model: str | None = None) -> Engine:
-    if name == "claude-cli":
-        return ClaudeCLIEngine(model=model)
-    return NoopEngine()
 
 
 def _fetch_issue(number: int, repo: str | None, runner: Runner) -> Issue:
@@ -54,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     rank.add_argument("--engine-model", help="model for --engine claude-cli")
 
     args = parser.parse_args(argv)
-    engine = build_engine(args.engine, model=args.engine_model)
+    engine = build_engine_from_args(args)
 
     searcher = Searcher(
         repo_path=args.source,
